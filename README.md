@@ -1,151 +1,195 @@
-# Bitcoin Mega Informer 分类预测系统
+# 🚀 Bitcoin Informer 分类模型使用说明文档
 
-基于超大型Informer模型的比特币价格方向二分类预测系统，使用4.0M参数的大模型进行实时预测。
+## 📋 项目概述
 
-## 🚀 系统特点
+本项目实现了基于Informer架构的比特币价格预测分类模型，通过知识蒸馏、结构化剪枝和TensorRT优化，实现了**17.53倍的推理加速**和**90%的模型压缩**。
 
-- **超大型模型**: 4.0M参数 (百万级参数量)
-- **丰富特征**: 33个技术指标特征
-- **实时预测**: 平均延迟仅11.86ms
-- **增强架构**: 4层编码器，256维模型
-- **完整数据**: 使用460万条比特币历史数据训练
-
-## 📁 文件结构
-
-```
-bitcoin_informer_classification/
-├── README.md                                    # 本文件
-├── InformerClassification.py                   # 核心模型实现
-├── bitcoin_optimized_features.py               # 增强特征工程
-├── train_mega_bitcoin_classification.py        # 超大型模型训练
-├── mega_realtime_prediction.py                 # 实时预测系统
-├── checkpoints/                                # 模型检查点
-│   └── bitcoin_mega_classification/            # 超大型模型
-│       ├── mega_best_model.pth                # 最佳模型权重
-│       └── mega_experiment_config.json        # 实验配置
-├── mega_prediction_cache.pkl                  # 预测数据缓存
-└── dataset/                                    # 数据目录（软链接）
-    └── bitcoin/
-        └── Bitcoin_BTCUSDT.csv                 # 原始比特币数据
-```
-
-## 🏗️ 模型架构
-
-### 超大型配置
-- **模型维度**: 256 (比原始模型增加4倍)
-- **编码器层数**: 4层 (比原始模型增加2倍)
-- **注意力头数**: 16个 (比原始模型增加2倍)
-- **前馈网络**: 1024维 (比原始模型增加4倍)
-- **参数量**: 3,978,243 (3.98M)
-
-### 增强特征 (33个)
-- **核心特征**: 8个 (价格比率、位置特征)
-- **技术指标**: 12个 (MACD、RSI、布林带等)
-- **波动率特征**: 3个 (历史波动率、ATR)
-- **动量特征**: 3个 (价格动量、ROC)
-- **成交量特征**: 3个 (成交量比率、OBV)
-- **形态特征**: 4个 (支撑阻力位、突破信号)
+### 🎯 核心特性
+- **超高性能**: 推理延迟低至0.280ms
+- **极小体积**: 模型大小仅1.81MB
+- **多精度支持**: FP32/FP16/INT8量化
+- **跨平台部署**: 支持ONNX和TensorRT
 
 ## 🚀 快速开始
 
-### 1. 训练超大型模型
+### 1. 测试PyTorch模型性能
 ```bash
-python train_mega_bitcoin_classification.py
-```
-
-### 2. 实时预测
-```bash
-python mega_realtime_prediction.py
-```
-
-## 📊 性能指标
-
-### 模型性能
-- **参数量**: 3.98M (百万级)
-- **训练数据**: 460万条记录
-- **特征维度**: 33个技术指标
-- **序列长度**: 30分钟历史数据
-
-### 预测性能
-- **平均延迟**: 11.86ms
-- **中位数延迟**: 11.65ms
-- **95th percentile**: 17.20ms
-- **99th percentile**: 19.11ms
-
-### 准确率
-- **预测准确率**: ~50% (接近随机水平，符合金融预测特点)
-- **预测倾向**: 略微偏向BUY信号
-- **概率范围**: 0.54-0.55 (较为保守)
-
-## 🔧 依赖要求
-
-```bash
-pip install -r requirements.txt
-```
-
-## 💡 使用说明
-
-### ✅ 项目独立性
-本项目已完全独立，不依赖外部Time-Series-Library。所有必要的模块（layers、utils）已包含在项目中。
-
-### ⚠️ 重要说明
-由于TensorRT引擎存在内存访问问题，无法在一个脚本中同时测试所有四种模型。建议使用分步测试方法。
-
-### 快速开始
-```bash
-# 1. 安装依赖
-pip install -r requirements.txt
-
-# 2. 测试PyTorch模型
 python test_pytorch_models.py
-
-# 3. 测试ONNX模型
-python run_onnx.py
-
-# 4. 手动测试TensorRT引擎（每次只测试一个）
-python rebuild_tensorrt.py --onnx_path informer_cls.fp32.onnx --engine_path informer_cls.trt.fp32.engine --precision fp32
-python rebuild_tensorrt.py --onnx_path student_model.fp32.onnx --engine_path student_model.trt.fp32.engine --precision fp32
-
-# 5. 生成性能汇总报告
-python four_model_summary.py
 ```
 
-### 训练模型
-1. 确保数据文件路径正确
-2. 运行训练脚本
-3. 模型将自动保存到 `checkpoints/bitcoin_mega_classification/`
+### 2. 测试TensorRT引擎性能
+```bash
+# 测试原始模型TensorRT
+python rebuild_tensorrt.py --onnx_path informer_cls.fp32.onnx --engine_path informer_cls.trt.fp32.engine --precision fp32
 
-### 实时预测
-1. 确保已训练好模型
-2. 运行预测脚本
-3. 系统会自动进行200次批量预测演示
+# 测试学生模型TensorRT
+python rebuild_tensorrt.py --onnx_path student_model.fp32.onnx --engine_path student_model.trt.fp32.engine --precision fp32
+```
 
-### 缓存机制
-- 首次运行会创建特征缓存
-- 后续运行会从缓存快速加载
-- 缓存文件: `mega_prediction_cache.pkl`
+### 3. 查看完整性能对比
+运行上述步骤后，您将获得四种模型的完整性能对比数据。
 
-## 📈 技术优势
+## 🛠️ 环境要求
 
-1. **大规模模型**: 4M参数的学习能力
-2. **丰富特征**: 33个技术指标覆盖全面
-3. **低延迟**: 毫秒级预测响应
-4. **完整数据**: 使用完整历史数据训练
-5. **自动优化**: 动态维度计算和缓存机制
+### 基础环境
+```bash
+# Python版本
+Python >= 3.8
 
-## 🎯 应用场景
+# 主要依赖
+torch >= 1.12.0
+tensorrt >= 10.0.0
+onnx >= 1.14.0
+numpy >= 1.21.0
+pandas >= 1.3.0
+```
 
-- **高频交易**: 毫秒级延迟适合实时交易
-- **量化分析**: 丰富的技术指标特征
-- **风险管理**: 保守的预测概率
-- **策略回测**: 完整的历史数据支持
+### GPU环境（推荐）
+```bash
+# CUDA版本
+CUDA >= 11.8
 
-## 🔄 版本历史
+# GPU内存
+GPU Memory >= 4GB (推荐8GB+)
 
-- **v1.0**: 基础Informer模型 (249K参数)
-- **v2.0**: 增强特征模型 (857K参数)
-- **v3.0**: 超大型模型 (3.98M参数) ⭐
+# 支持的GPU
+NVIDIA GPU with Compute Capability >= 6.1
+```
 
----
+### 安装依赖
+```bash
+# 创建虚拟环境
+conda create -n bitcoin_informer python=3.8
+conda activate bitcoin_informer
 
-**注意**: 本系统仅用于研究和学习目的，不构成投资建议。金融预测具有高风险，请谨慎使用。# btc_informer_classification
+# 安装PyTorch (CUDA版本)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 安装其他依赖
+pip install tensorrt onnx onnxruntime-gpu pandas numpy scikit-learn matplotlib seaborn
+```
+
+## 📁 项目结构
+
+```
+bitcoin_informer_classification/
+├── 📁 checkpoints/                    # 模型权重文件
+│   ├── bitcoin_mega_classification/   # 教师模型
+│   ├── student_distillation/          # 知识蒸馏模型
+│   └── student_pruned/                # 剪枝模型
+├── 📁 dataset/                        # 数据集
+├── 🔧 核心脚本/
+│   ├── InformerClassification.py      # 模型定义
+│   ├── run_onnx.py                    # ONNX推理脚本 ⭐
+│   ├── model_comparison_test.py       # 四模型延迟对比脚本 ⭐
+│   ├── rebuild_tensorrt.py            # TensorRT构建脚本
+│   ├── export_to_onnx.py              # ONNX导出脚本
+│   ├── train_mega_bitcoin_classification.py # 模型训练脚本
+│   └── mega_realtime_prediction.py    # 实时预测脚本
+├── 🎯 推理引擎/
+│   ├── student_model.trt.fp32.engine  # 最佳性能引擎
+│   ├── student_model.trt.fp16.engine  # 最小体积引擎
+│   ├── student_model.fp32.onnx        # 跨平台模型
+│   ├── informer_cls.fp32.onnx         # 原始ONNX模型
+│   ├── informer_cls.optimized.onnx    # 优化ONNX模型
+│   └── informer_cls.trt.*.engine      # 原始TensorRT引擎
+├── 📚 文档/
+│   ├── 使用说明文档.md                # 本文档 ⭐
+│   ├── README.md                      # 项目说明
+│   ├── FINAL_GUIDE.md                 # 最终使用指南
+│   ├── FOUR_MODEL_COMPARISON_REPORT.md # 四模型性能对比报告 ⭐
+│   ├── 完整技术报告.md                # 技术分析报告
+│   ├── 混合精度实际效果分析报告.md    # 混合精度分析
+│   └── 量化敏感度评估方法.md          # 量化评估方法
+└── 📁 archived_files/                 # 归档文件（已清理）
+```
+## 📊 模型性能对比
+
+> 📋 详细对比数据请查看: `FOUR_MODEL_COMPARISON_REPORT.md`
+
+| 排名 | 模型类型 | 推理时间 | 文件大小 | 加速比 | 推荐场景 |
+|------|---------|---------|---------|--------|----------|
+| 🥇 | **学生模型_TensorRT_FP32** | **0.280ms** | 2.81MB | **17.53x** | 高频交易、实时预测 |
+| 🥈 | **学生模型_TensorRT_FP16** | 0.420ms | 1.81MB | 11.69x | 边缘设备、移动端 |
+| 🥉 | 原始模型_TensorRT_FP32 | 0.520ms | 18.49MB | 9.44x | 基准对比 |
+| 4 | **学生模型_ONNX** | 0.641ms | 3.33MB | 7.66x | 跨平台、云端服务 |
+| 5 | 学生模型_PyTorch | 2.260ms | - | 2.17x | 开发调试 |
+| 6 | 原始模型_PyTorch | 4.909ms | - | 1.00x | 基准测试 |
+
+
+### 步骤1: 测试PyTorch模型
+
+```bash
+python test_pytorch_models.py
+```
+
+**说明**: 测试原始模型和学生模型的PyTorch版本，获取基准性能
+
+**预期输出**:
+```
+================================================================================
+🚀 PyTorch模型性能测试 - 获取基准性能数据
+================================================================================
+🥇 学生模型_PyTorch: 2.288 ± 0.154 ms
+🥈 原始模型_PyTorch: 5.052 ± 0.406 ms
+🚀 加速比: 学生模型比原始模型快 2.21x
+```
+    
+    
+### 步骤2: 重建原始模型TensorRT引擎
+
+```bash
+python rebuild_tensorrt.py --onnx_path informer_cls.fp32.onnx --engine_path informer_cls.trt.fp32.engine --precision fp32
+```
+
+**说明**: 重建原始模型的TensorRT引擎并测试性能
+
+**预期输出**:
+```
+🎯 重新构建TensorRT引擎
+============================================================
+✅ 引擎构建成功: informer_cls.trt.fp32.engine
+📊 推理测试:
+   推理时间: 0.520 ms
+   预测概率: 0.5000
+   加速比: 9.44x
+```
+
+### 步骤3: 重建学生模型TensorRT引擎
+
+```bash
+python rebuild_tensorrt.py --onnx_path student_model.fp32.onnx --engine_path student_model.trt.fp32.engine --precision fp32
+```
+
+**说明**: 重建学生模型的TensorRT引擎并测试性能
+
+**预期输出**:
+```
+🎯 重新构建TensorRT引擎
+============================================================
+✅ 引擎构建成功: student_model.trt.fp32.engine
+📊 推理测试:
+   推理时间: 0.280 ms
+   预测概率: 0.5000
+   加速比: 17.53x
+```
+
+### 步骤4: 可选 - 测试FP16引擎
+
+```bash
+python rebuild_tensorrt.py --onnx_path student_model.fp32.onnx --engine_path student_model.trt.fp16.engine --precision fp16
+```
+
+**说明**: 测试学生模型的FP16 TensorRT引擎，获得更小的文件体积
+
+**预期输出**:
+```
+🎯 重新构建TensorRT引擎
+============================================================
+✅ 引擎构建成功: student_model.trt.fp16.engine
+📊 推理测试:
+   推理时间: 0.420 ms
+   预测概率: 0.5000
+   文件大小: 1.81 MB
+   加速比: 11.69x
+```
